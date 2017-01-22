@@ -1,4 +1,4 @@
-function [diffusedNormalizedAffinityMatrix] = diffuse(normalizedAffinityMatrix, varargin)
+    function [diffusedNormalizedAffinityMatrix] = diffuse(normalizedAffinityMatrix, varargin)
 
     numDiffusionSteps = 50;
     mode = 'exact';
