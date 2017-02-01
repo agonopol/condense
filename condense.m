@@ -8,28 +8,30 @@ addpath('./lib');
 % diffuse
 
 % load the data, clean transform
-path = fullfile(pwd(), 'data/6300_HF_D1_splorm_0_normalized_Clean.fcs');
+path = fullfile(pwd(), 'data/6300_HF_D3_splorm_0_normalized_Clean.fcs');
 obj = CyTOFData(path);
 obj.dataTransformed = CyTOFData.transform(obj.data, 1);
 markers = obj.markerNames';
 channels = find(arrayfun(@(x1) ischar(x1{1}) && ~isempty(strfind(x1{1}, '_')) && isempty(strfind(x1{1}, 'DNA')) , markers));
 data = obj.dataTransformed(:, channels');
 
-v = VideoWriter('results/condense/6300_HF_D1_tsne.avi');
+[pathstr,name,ext] = fileparts(path);
+v = VideoWriter(fullfile(strrep(pathstr, 'data', 'results/condense'), strrep(name, '_splorm_0_normalized_Clean', '_combined.avi')));
 v.FrameRate = 15;
 open(v);
 
-scatterX(data, 'dimensionalityReductionMethod', 'tsne');
-% xlim([-12,12]);
-% ylim([-12,12]);
+scatterX(data, 'dimensionalityReductionMethod', 'mds');
+xlim([-12,12]);
+ylim([-12,12]);
 writeVideo(v,getframe(gcf));
     
-N=5;
+N=100;
 for i = 1:N
     data = condenseStep(data);
-    scatterX(data, 'dimensionalityReductionMethod', 'tsne');
-%     xlim([-12,12]);
-%     ylim([-12,12]);
+    data = combineStep(data);
+    scatterX(data, 'dimensionalityReductionMethod', 'mds');
+     xlim([-12,12]);
+     ylim([-12,12]);
     writeVideo(v,getframe(gcf));
 end
 
