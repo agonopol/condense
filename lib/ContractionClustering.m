@@ -209,7 +209,7 @@ classdef ContractionClustering
             tic
             rsl = false;
             numClusters = length(unique(obj.clusterAssignments(obj.iteration, :)));
-            if (numClusters == 1)
+            if (numClusters == 1 && obj.iteration > 10)
                 rsl = true;
             end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
