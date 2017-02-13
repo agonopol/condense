@@ -16,7 +16,7 @@ classdef ContractionClustering
         normalizedAffinityMatrixInitialSigma = [];
         weights = [];
         runtimes;
-        iteration;
+        iteration = 1;
         epsilon;
     end
     methods
@@ -24,6 +24,10 @@ classdef ContractionClustering
             obj.options = options;
             obj.dataContracted = data;
             obj.currentSigma = obj.options.initialSigma;
+            if (obj.currentSigma == Inf)
+                [distanceMatrix, ~] = calcDistanceMatrix(data);
+                obj.currentSigma = mean2(distanceMatrix) - std2(distanceMatrix);
+            end
 
             % Make sure the expert labels are properly populated.
             if (isempty(obj.options.expertLabels))
@@ -236,18 +240,24 @@ classdef ContractionClustering
                         %% the sum of ten consecutive decreases is less than 5% of the
                         %% total sum of eigenvalues. After the sum of eigenvalues stabilized,
                         %% the sigma is increased by 20%.
-                        if (   (iterationLastIncrease+9 < obj.iteration) ...
+                        if (   (obj.iteration > 10) ...
                             && (  sum(sum(obj.eigenvalueSequence(:, obj.iteration-10:obj.iteration-1))-sum(obj.eigenvalueSequence(:, obj.iteration-9:obj.iteration))) ...
                                 < 0.05 * sum(obj.eigenvalueSequence(:, obj.iteration-10))))
-                            iterationLastIncrease = obj.iteration;
                             obj.currentSigma = 1.2*obj.currentSigma;
+                            disp(['Bumped sigma in iteration ' num2str(obj.iteration)]);
+                            obj.saveCondensationCheckoint();
                         end
                     case 'movementStabilization'
                         if (isequal(size(obj.dataContracted), size(previousDataContracted)))
                             thisRelativeMovement = max(sum(abs(obj.dataContracted-previousDataContracted)))/max(max(obj.dataContracted)-min(obj.dataContracted))+eps;
+                            disp(['Did not contract, checking if should bump sigma on itration ' num2str(obj.iteration), ...
+                                ' with relative movment of ', num2str(thisRelativeMovement), '<', num2str(obj.options.thresholdControlSigma) ]);
                             if (thisRelativeMovement < obj.options.thresholdControlSigma)
                                 obj.currentSigma = 1.1*obj.currentSigma;
-                                disp(['Bumped sigma in iteration ' num2str(obj.iteration)])
+                                disp(['Bumped sigma to ', num2str(obj.currentSigma), 'in iteration ', num2str(obj.iteration), ... 
+                                    ' previous bump was on ', num2str(iterationLastIncrease)]);
+                                obj.saveCondensationCheckoint();
+                                iterationLastIncrease = obj.iteration;
                             end
                         end
                         previousDataContracted = obj.dataContracted;
@@ -270,11 +280,12 @@ classdef ContractionClustering
                         mergeEpsilonClusters = true;
                 end
                 if (mergeEpsilonClusters)
+                    disp('Merging Clusters');
                     switch (obj.options.epsilonClusterIdentificationMethod)
                         case 'constantEpsilon'
                             epsilon = obj.epsilon;
                         case 'dynamicSigmaFraction'
-                            epsilon = currentSigma/4;
+                            epsilon = obj.currentSigma/4;
                     end
                     [obj.dataContracted, obj.sampleIndices] = ...
                         conflateClusters(obj.dataContracted, ...
@@ -305,6 +316,13 @@ classdef ContractionClustering
                     disp([indent(obj.options.indentationLevel) message]);
                 end
             end
+        end
+        function saveCondensationCheckoint(obj)
+            dest = fullfile([obj.options.destination, 'checkpoints', '/', int2str(obj.iteration), '.mat']);
+            [checkpoints, ~, ~] = fileparts(dest);
+            mkdir_if_not_exists(checkpoints);
+            save([obj.options.destination, '/checkpoints/', int2str(obj.iteration), '.mat'], ...
+                    'obj');
         end
         function emitRuntimeBreakdown(obj)
             if (obj.options.emitRuntimeBreakdown)
