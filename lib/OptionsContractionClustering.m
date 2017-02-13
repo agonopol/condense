@@ -1,10 +1,11 @@
 classdef OptionsContractionClustering
     properties
+        destination = 'results/contract'
         verbosityLevel = 1;
         indentationLevel = 0;
         numPrincipalComponents = 50;
         numDiffusionSteps = 1;
-        maxNumContractionSteps = 60;
+        maxNumContractionSteps = 1000;
         kKNN = 20;
         initialSigma = Inf;
         nystroemN = 200;
@@ -15,12 +16,12 @@ classdef OptionsContractionClustering
         emitRuntimeBreakdown = false;
         emitCondensationSequence = false;
         mergeEpsilonClusters = true;
-        thresholdControlSigma = 0.01;
+        thresholdControlSigma = 0.5;
         clusterAssignmentMethod;
         controlSigmaMethod;
         frequencyMergingEpsilonClusters;
         modeCalcDistances = 'normal';
-        epsilonClusterIdentificationMethod = 'constantEpsilon';
+        epsilonClusterIdentificationMethod = 'dynamicSigmaFraction';
         prefixFileNames = '';
     end
     methods
@@ -34,7 +35,7 @@ classdef OptionsContractionClustering
             
             switch (mode)
                 case 'classic'
-                    obj.clusterAssignmentMethod = 'spectral';
+                    obj.clusterAssignmentMethod = 'none';
                     obj.controlSigmaMethod = 'nuclearNormStabilization';
                     obj.frequencyMergingEpsilonClusters = 'uponMetastability';
                     
@@ -45,8 +46,8 @@ classdef OptionsContractionClustering
             end
         end
         function str = asString(obj)
-            str = ['cc_' ...
-                   obj.expId '_' ...
+            str = [obj.destination ...
+                   '/' ...
                    num2str(obj.numPrincipalComponents) '_' ...
                    num2str(obj.numDiffusionSteps) '_' ...
                    num2str(obj.kKNN) '_' ...
