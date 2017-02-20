@@ -4,7 +4,7 @@ classdef OptionsContractionClustering
         verbosityLevel = 1;
         indentationLevel = 0;
         numPrincipalComponents = 50;
-        numDiffusionSteps = 3;
+        numDiffusionSteps = 1;
         maxNumContractionSteps = 1000;
         kKNN = 20;
         initialSigma = Inf;

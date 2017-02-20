@@ -5,7 +5,7 @@ clc;
 addpath('./lib');
 
 % load the data, clean transform
-path = fullfile(pwd(), 'data/6170_D1_splorm_0_normalized_Clean.fcs');
+path = fullfile(pwd(), 'data/6170_Healthy_splorm_0_normalized_Clean.fcs');
 obj = CyTOFData(path);
 obj.dataTransformed = CyTOFData.transform(obj.data, 1);
 markers = obj.markerNames';
@@ -15,7 +15,8 @@ data = datasample(data, min(length(data), 1600),'Replace', false);
 
 options = OptionsContractionClustering();
 options.clusterAssignmentMethod = 'none';
-options.controlSigmaMethod = 'always';
+options.controlSigmaMethod = 'movementStabilization';
+
 [~, name, ~] = fileparts(path);
 options.destination = fullfile(pwd(), 'results', 'contract', name, '//');
 [dest, ~, ~] = fileparts(options.destination);
