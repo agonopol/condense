@@ -243,9 +243,8 @@ classdef ContractionClustering
                         if (   (obj.iteration > 10) ...
                             && (  sum(sum(obj.eigenvalueSequence(:, obj.iteration-10:obj.iteration-1))-sum(obj.eigenvalueSequence(:, obj.iteration-9:obj.iteration))) ...
                                 < 0.05 * sum(obj.eigenvalueSequence(:, obj.iteration-10))))
-                            obj.currentSigma = 1.2*obj.currentSigma;
+                            obj.currentSigma = 1.1*obj.currentSigma;
                             disp(['Bumped sigma in iteration ' num2str(obj.iteration)]);
-                            obj.saveCondensationCheckoint();
                         end
                     case 'movementStabilization'
                         if (isequal(size(obj.dataContracted), size(previousDataContracted)))
@@ -256,7 +255,6 @@ classdef ContractionClustering
                                 obj.currentSigma = 1.1*obj.currentSigma;
                                 disp(['Bumped sigma to ', num2str(obj.currentSigma), 'in iteration ', num2str(obj.iteration), ... 
                                     ' previous bump was on ', num2str(iterationLastIncrease)]);
-                                obj.saveCondensationCheckoint();
                                 iterationLastIncrease = obj.iteration;
                             end
                         end
@@ -316,13 +314,6 @@ classdef ContractionClustering
                     disp([indent(obj.options.indentationLevel) message]);
                 end
             end
-        end
-        function saveCondensationCheckoint(obj)
-            dest = fullfile([obj.options.destination, 'checkpoints', '/', int2str(obj.iteration), '.mat']);
-            [checkpoints, ~, ~] = fileparts(dest);
-            mkdir_if_not_exists(checkpoints);
-            save([obj.options.destination, '/checkpoints/', int2str(obj.iteration), '.mat'], ...
-                    'obj');
         end
         function emitRuntimeBreakdown(obj)
             if (obj.options.emitRuntimeBreakdown)

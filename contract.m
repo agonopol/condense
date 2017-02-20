@@ -11,6 +11,7 @@ obj.dataTransformed = CyTOFData.transform(obj.data, 1);
 markers = obj.markerNames';
 channels = find(arrayfun(@(x1) ischar(x1{1}) && ~isempty(strfind(x1{1}, '_')) && isempty(strfind(x1{1}, 'DNA')) , markers));
 data = obj.dataTransformed(:, channels');
+data = datasample(data, min(length(data, 1600),'Replace', false);
 
 options = OptionsContractionClustering();
 options.clusterAssignmentMethod = 'none';
@@ -21,5 +22,5 @@ options.destination = fullfile(pwd(), 'results', 'contract', name, '//');
 mkdir_if_not_exists(dest);
 
 contractor = ContractionClustering(data, options);
-contractor.contract();
+contractor = contractor.contract();
 
