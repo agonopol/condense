@@ -36,7 +36,11 @@ function scatterX(M, varargin)
                                            'type_k_knn', 'normal', ...
                                            'distfun', 'euclidean', ...
                                            'n_pca', 10);
-                M_toPlot = cmdscale(D_org, 2);
+                try
+                    M_toPlot = cmdscale(D_org, 2);
+                catch
+                     M_toPlot = M;
+                end
             case 'tsne'
                 %M_toPlot = tsne(M, [], 2, 10, 15);
                 %M_toPlot = tsne(M, [], 2, 10, 15);
