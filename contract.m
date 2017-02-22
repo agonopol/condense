@@ -6,9 +6,9 @@ addpath('./lib');
 
 options = OptionsContractionClustering();
 options.clusterAssignmentMethod = 'none';
-options.frequencyMergingEpsilonClusters = 'uponMetastability';
-options.controlSigmaMethod = 'movementStabilization';
-options.numDiffusionSteps = 1;
+options.frequencyMergingEpsilonClusters = 'always';
+options.controlSigmaMethod = 'nuclearNormStabilization';
+options.numDiffusionSteps = 3;
 
 files = dir('data/*.fcs');
 for file = files'

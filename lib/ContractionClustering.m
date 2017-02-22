@@ -7,6 +7,7 @@ classdef ContractionClustering
         % epsilon clusters being represented by a single point been merged.
         dataContracted = [];
         eigenvalueSequence = [];
+        clusterStats = {};
         currentEigenvectors = [];
         currentEigenvalues = [];
         clusterAssignments = [];
@@ -52,6 +53,7 @@ classdef ContractionClustering
                 obj = obj.performContractionMove();
                 obj = obj.mergeEpsilonClusters();
                 obj = obj.assignClusters();
+                obj = obj.recordClusterStats();
                 obj = obj.controlSigma();
                 obj = obj.plotAlgorithmState();
                 obj.printProgress(false);
@@ -59,6 +61,7 @@ classdef ContractionClustering
                     break;
                 end
             end
+            obj.writeStats();
             obj.emitRuntimeBreakdown();
             obj.emitCondensationSequence();
         end
@@ -296,6 +299,26 @@ classdef ContractionClustering
         function rsl = requireSpectralDecomposition(obj)
             rsl = (   strcmp(obj.options.clusterAssignmentMethod, 'spectral') ...
                    || strcmp(obj.options.controlSigmaMethod, 'nuclearNormStabilization'));
+        end
+        function obj = recordClusterStats(obj)
+            centroids = [];
+            assigments = obj.clusterAssignments(end,:)';
+            for cluster = 1:max(assigments)
+                index = find(assigments == cluster);
+                data = obj.contractionSequence(index,:,1);
+                centroids = [centroids; mean(data', 2)'];
+            end
+            stats = containers.Map(['centroids'], [centroids]);
+            obj.clusterStats = [obj.clusterStats; {stats}];
+        end
+        function writeStats(obj)
+            filename = strcat(obj.options.asString(), '_stats.json');
+            fid = fopen(filename,'wt');
+            for i = 1:length(obj.clusterStats)
+               fprintf(fid, jsonencode(obj.clusterStats{i}));
+               fprintf(fid, '\n');
+            end
+            fclose(fid);
         end
         function printProgress(obj, forcePrint)
             persistent timeLastPrint;
