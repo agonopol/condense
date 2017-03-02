@@ -1,6 +1,7 @@
 classdef OptionsContractionClustering
     properties
         destination = 'results/contract'
+        fastStop = false;
         verbosityLevel = 1;
         indentationLevel = 0;
         numPrincipalComponents = 50;
