@@ -19,10 +19,14 @@ classdef ContractionClustering
         runtimes;
         iteration = 1;
         epsilon;
+        sampleSize;
+        channels = []
     end
     methods
-        function obj = ContractionClustering(data, options)
+        function obj = ContractionClustering(data, channels, options)
             obj.options = options;
+            obj.channels = channels;
+            obj.sampleSize = size(data,1);
             obj.dataContracted = data;
             obj.currentSigma = obj.options.initialSigma;
             if (obj.currentSigma == Inf)
@@ -219,6 +223,9 @@ classdef ContractionClustering
             if (numClusters == 1 && obj.iteration > 10)
                 rsl = true;
             end
+            if (obj.options.fastStop && obj.sampleSize ~= numClusters)
+                rsl = true;
+            end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
         end
         function obj = performContractionMove(obj)
@@ -301,22 +308,51 @@ classdef ContractionClustering
                    || strcmp(obj.options.controlSigmaMethod, 'nuclearNormStabilization'));
         end
         function obj = recordClusterStats(obj)
-            centroids = [];
+            centroids = {};
+            sizes = [];
             assigments = obj.clusterAssignments(end,:)';
             for cluster = 1:max(assigments)
                 index = find(assigments == cluster);
                 data = obj.contractionSequence(index,:,1);
-                centroids = [centroids; mean(data', 2)'];
+                centroids{end+1} = containers.Map(obj.channels, mean(data', 2)');
+                sizes = [sizes, length(index)];
             end
-            stats = containers.Map(['centroids'], [centroids]);
+            stats = containers.Map({'centroids', 'size'}, {centroids, sizes});
             obj.clusterStats = [obj.clusterStats; {stats}];
+        end
+        function plotClusterHeatMap(obj)
+            stats = obj.clusterStats{end}('centroids');
+            sizes = obj.clusterStats{end}('size');
+            data = [];
+            for cluster = 1:length(stats)
+               row = [];
+               for channel = 1:length(obj.channels)
+                  row = [row, stats{cluster}(obj.channels{channel})];
+               end
+               if cluster == 1
+                 data = [data; [0, sizes(cluster), row]];
+               else
+                 data = [data; [norm(row - data(1,3:end)), sizes(cluster), row]];
+               end
+            end
+            data=sortrows(data);
+            hmap = HeatMap(data(:,3:end), 'RowLabels', data(:,2), 'ColumnLabels', obj.channels);
+            hmap.addXLabel('channel');
+            hmap.addYLabel('Size of cluster');
+            saveas(hmap.plot, strcat(obj.options.asString(), '_heatmap.png'));
+            close;
         end
         function writeStats(obj)
             filename = strcat(obj.options.asString(), '_stats.json');
             fid = fopen(filename,'wt');
-            for i = 1:length(obj.clusterStats)
-               fprintf(fid, jsonencode(obj.clusterStats{i}));
-               fprintf(fid, '\n');
+            if (obj.options.fastStop)
+                fprintf(fid, jsonencode(obj.clusterStats{end}));
+                fprintf(fid, '\n');
+            else
+                for i = 1:length(obj.clusterStats)
+                    fprintf(fid, jsonencode(obj.clusterStats{i}));
+                    fprintf(fid, '\n');
+                end
             end
             fclose(fid);
         end
@@ -354,13 +390,19 @@ classdef ContractionClustering
             end
         end
         function saveFigureAsAnimationFrame(obj)
-            im = print('-RGBImage');
-            [imind,cm] = rgb2ind(im,256);
-            filename = strcat(obj.options.asString(), '_animation.gif');
-            if obj.iteration == 1
-                imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0);
+            if (obj.options.fastStop) 
+                if checkTerminationCondition(obj)
+                    saveas(gcf, strcat(obj.options.asString(), '_clusters.png'))
+                end
             else
-                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0);
+                im = print('-RGBImage');
+                [imind,cm] = rgb2ind(im,256);
+                filename = strcat(obj.options.asString(), '_animation.gif');
+                if obj.iteration == 1
+                    imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0);
+                else
+                    imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0);
+                end
             end
         end
         function emitClusterResults(obj)

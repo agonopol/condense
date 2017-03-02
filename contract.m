@@ -6,9 +6,10 @@ addpath('./lib');
 
 options = OptionsContractionClustering();
 options.clusterAssignmentMethod = 'none';
-options.frequencyMergingEpsilonClusters = 'always';
+options.frequencyMergingEpsilonClusters = 'uponMetastability';
 options.controlSigmaMethod = 'nuclearNormStabilization';
 options.numDiffusionSteps = 3;
+options.fastStop = true;
 
 files = dir('data/*.fcs');
 for file = files'
@@ -18,9 +19,8 @@ for file = files'
     path = fullfile(file.folder, file.name);
     obj = CyTOFData(path);
     obj.dataTransformed = CyTOFData.transform(obj.data, 1);
-    markers = obj.markerNames';
-    channels = find(arrayfun(@(x1) ischar(x1{1}) && ~isempty(strfind(x1{1}, '_')) && isempty(strfind(x1{1}, 'DNA')) , markers));
-    data = obj.dataTransformed(:, channels');
+    fields = channels(obj);
+    data = obj.dataTransformed(:, cell2mat(fields(:,1))');
     data = datasample(data, min(length(data), 1600),'Replace', false);
     
     [~, name, ~] = fileparts(path);
@@ -28,8 +28,10 @@ for file = files'
     [dest, ~, ~] = fileparts(options.destination);
     mkdir_if_not_exists(dest);
  
-    contractor = ContractionClustering(data, options);
+    contractor = ContractionClustering(data, fields(:,2), options);
     contractor = contractor.contract();
+    close all;
+    contractor.plotClusterHeatMap();
 end
 
 close all;
