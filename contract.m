@@ -6,10 +6,10 @@ addpath('./lib');
 
 options = OptionsContractionClustering();
 options.clusterAssignmentMethod = 'none';
-options.frequencyMergingEpsilonClusters = 'uponMetastability';
+options.frequencyMergingEpsilonClusters = 'uponMetastability'; %always,uponMetastability%
 options.controlSigmaMethod = 'nuclearNormStabilization';
 options.numDiffusionSteps = 3;
-options.fastStop = true;
+options.fastStop = false;
 
 files = dir('data/*.fcs');
 for file = files'
@@ -30,9 +30,12 @@ for file = files'
  
     contractor = ContractionClustering(data, fields(:,2), options);
     contractor = contractor.contract();
-    close all;
-    contractor.plotClusterHeatMap();
+%     contractor.plotClusterHeatMap();
+    break;
+%     close all force;
+%     close all hidden;
 end
 
-close all;
+% % close all force;
+% % close all hidden;
 clc;

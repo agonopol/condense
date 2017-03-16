@@ -57,7 +57,7 @@ classdef ContractionClustering
                 obj = obj.performContractionMove();
                 obj = obj.mergeEpsilonClusters();
                 obj = obj.assignClusters();
-                obj = obj.recordClusterStats();
+%                 obj = obj.recordClusterStats();
                 obj = obj.controlSigma();
                 obj = obj.plotAlgorithmState();
                 obj.printProgress(false);
@@ -65,7 +65,7 @@ classdef ContractionClustering
                     break;
                 end
             end
-            obj.writeStats();
+%             obj.writeStats();
             obj.emitRuntimeBreakdown();
             obj.emitCondensationSequence();
         end
@@ -92,6 +92,25 @@ classdef ContractionClustering
                                                                         'exponent', 2, ...
                                                                         'weights', obj.weights);
             obj.runtimes('aff') = obj.runtimes('aff') + toc;
+        end
+        function obj = contractToStablePoint(obj)
+            for iteration = 1:obj.options.maxNumContractionSteps
+                obj.iteration = obj.iteration + 1;
+                obj.contractionSequence(:, :, obj.iteration) = inflateClusters(obj.dataContracted, obj.sampleIndices);
+                obj = obj.calcAffinities();
+                obj = obj.spectralDecompose();
+                obj = obj.performContractionMove();
+                obj = obj.mergeEpsilonClusters();
+                obj = obj.assignClusters();
+                obj = obj.recordClusterStats();
+                obj = obj.controlSigma();
+                    obj = obj.plotAlgorithmState();
+
+                obj.printProgress(true);
+                if (obj.isMetastable( ) || obj.checkTerminationCondition( ))
+                    break;
+                end
+            end
         end
         function obj = spectralDecompose(obj)
             if (obj.requireSpectralDecomposition())
@@ -220,10 +239,9 @@ classdef ContractionClustering
             tic
             rsl = false;
             numClusters = length(unique(obj.clusterAssignments(obj.iteration, :)));
-            if (numClusters == 1 && obj.iteration > 10)
+            if (numClusters == 1 && obj.iteration > 5)
                 rsl = true;
-            end
-            if (obj.options.fastStop && obj.sampleSize ~= numClusters)
+            elseif (obj.options.fastStop && obj.sampleSize ~= numClusters)
                 rsl = true;
             end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
@@ -234,6 +252,33 @@ classdef ContractionClustering
             obj.dataContracted =   (1-obj.options.inertia) * weightedMultiply(diffusedNormalizedAffinityMatrix, obj.dataContracted, obj.weights) ...
                                  +  obj.options.inertia    * obj.dataContracted;
             obj.runtimes('contr') = obj.runtimes('contr') + toc;
+        end
+        function stable = isMetastable(obj)
+            stable = false;
+            if (obj.iteration == 1)
+                stable = false;
+            else
+                switch (obj.options.controlSigmaMethod)
+                    case 'nuclearNormStabilization'
+                        %% The idea of this mode is to keep the sigma constant until the sum of eigenvalues
+                        %% stabilizes. The sum of eigenvalues is considered stablized if
+                        %% the sum of ten consecutive decreases is less than 5% of the
+                        %% total sum of eigenvalues. After the sum of eigenvalues stabilized,
+                        %% the sigma is increased by 20%.
+                        if (   (obj.iteration > 10) ...
+                            && (  sum(sum(obj.eigenvalueSequence(:, obj.iteration-10:obj.iteration-1))-sum(obj.eigenvalueSequence(:, obj.iteration-9:obj.iteration))) ...
+                                < 0.05 * sum(obj.eigenvalueSequence(:, obj.iteration-10))))
+                           stable = true;
+                        end
+                    case 'movementStabilization'
+                        if (isequal(size(obj.dataContracted), size(previousDataContracted)))
+                            thisRelativeMovement = max(sum(abs(obj.dataContracted-previousDataContracted)))/max(max(obj.dataContracted)-min(obj.dataContracted))+eps;
+                            if (thisRelativeMovement < obj.options.thresholdControlSigma)
+                                stable = true;
+                            end
+                        end
+                end
+            end
         end
         function obj = controlSigma(obj)
             tic
@@ -336,11 +381,14 @@ classdef ContractionClustering
                end
             end
             data=sortrows(data);
-            hmap = HeatMap(data(:,3:end), 'RowLabels', data(:,2), 'ColumnLabels', obj.channels);
+            rows = data(:,2);
+            data = zscore(data);
+            hmap = HeatMap(data(:,3:end), 'RowLabels', rows, 'ColumnLabels', obj.channels);
             hmap.addXLabel('channel');
-            hmap.addYLabel('Size of cluster');
+            hmap.addYLabel('size of cluster');
+            colormap(hmap, parula);
             saveas(hmap.plot, strcat(obj.options.asString(), '_heatmap.png'));
-            close;
+            close all;
         end
         function writeStats(obj)
             filename = strcat(obj.options.asString(), '_stats.json');
