@@ -3,6 +3,7 @@ clear;
 clc;
 
 addpath('./lib');
+addpath('./lib/emd');
 
 options = OptionsContractionClustering();
 options.clusterAssignmentMethod = 'none';
@@ -29,13 +30,11 @@ for file = files'
     mkdir_if_not_exists(dest);
  
     contractor = ContractionClustering(data, fields(:,2), options);
-    contractor = contractor.contract();
-%     contractor.plotClusterHeatMap();
+    contractor = contractor.steps(2);
+    contractor.plotClusterHeatMap();
     break;
-%     close all force;
-%     close all hidden;
+    close all force;
+    close all hidden;
 end
 
-% % close all force;
-% % close all hidden;
 clc;

@@ -17,14 +17,14 @@ data = load(path);
 
     
 [~, name, ~] = fileparts(path);
-options.destination = fullfile(pwd(), 'results', 'contract', name, 'DB1_umi50_norm', '//');
+options.destination = fullfile(pwd(), 'results', 'contract', name, 'DB2_umi50_norm', '//');
 [dest, ~, ~] = fileparts(options.destination);
 mkdir_if_not_exists(dest);
  
 %remove empty rows / columsn 
-data.DB1_umi50_norm( ~any(data.DB1_umi50_norm,2), : ) = [];  %rows
-data.DB1_umi50_norm( :, ~any(data.DB1_umi50_norm,1) ) = [];  %columns
+data.DB2_umi50_norm( ~any(data.DB2_umi50_norm,2), : ) = [];  %rows
+data.DB2_umi50_norm( :, ~any(data.DB2_umi50_norm,1) ) = [];  %columns
 
-contractor = ContractionClustering(data.DB1_umi50_norm, [], options);
+contractor = ContractionClustering(data.DB2_umi50_norm, [], options);
 contractor = contractor.contract();
 clc;
