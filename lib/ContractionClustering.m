@@ -366,7 +366,11 @@ classdef ContractionClustering
             stats = containers.Map({'centroids', 'size'}, {centroids, sizes});
             obj.clusterStats = [obj.clusterStats; {stats}];
         end
-        function plotClusterHeatMap(obj)
+        function heatmap(obj)
+            obj.centroidHeatmap();
+            obj.clusterHeatmaps();
+        end
+        function centroidHeatmap(obj)
             [centroids, sizes] = stats(obj.contractionSequence(:,:,1), obj.clusterAssignments(end,:)'); 
             data = [];
             for cluster = 1:length(sizes)
@@ -386,7 +390,36 @@ classdef ContractionClustering
             fig = hmap.plot;
             colormap(fig, parula);
             colorbar(fig);
-            saveas(fig, strcat(obj.options.asString(), '_heatmap.png'));
+            saveas(fig, strcat(obj.options.asString(), '_centroids.png'));
+            close all force;
+        end
+        function clusterHeatmaps(obj)
+            [~, sizes] = stats(obj.contractionSequence(:,:,1), obj.clusterAssignments(end,:)');
+            samples = obj.contractionSequence(:, :, 1);
+            cmap =  distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :))));
+            offset = 0.1;
+            for cluster = 1:length(sizes)
+               width = (sizes(cluster) / sum(sizes)) * 0.85;
+               fig  = subplot('Position', [offset, 0.1, width, .9]);
+               data = samples(obj.clusterAssignments(end,:) == cluster,:);
+               imagesc(fig, data');
+               if (cluster == 1)
+                    fig.YAxis.TickLabels = obj.channels';
+               end
+               colormap(fig, parula);
+               bar = subplot('Position', [offset, 0.05, width, .05]);
+               imagesc(bar, [cluster]);
+               colormap(bar, cmap);
+               bar.YAxis.Visable = 'off';
+               bar.XAxis.Visable = 'off';
+               xlabel(bar, string(1));
+               offset = offset + width;
+            end
+            colorbar();
+            im = print('-RGBImage');
+            [imind,cm] = rgb2ind(im,256);
+            filename = strcat(obj.options.asString(), '_heatmap.png');
+            imwrite(imind,cm,filename,'png');
             close all force;
         end
         function writeStats(obj)
