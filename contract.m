@@ -31,7 +31,7 @@ for file = files'
  
     contractor = ContractionClustering(data, fields(:,2), options);
     contractor = contractor.steps(2);
-    contractor.plotClusterHeatMap();
+    contractor.heatmap();
     break;
     close all force;
     close all hidden;
