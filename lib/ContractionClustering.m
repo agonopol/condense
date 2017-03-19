@@ -17,7 +17,7 @@ classdef ContractionClustering
         normalizedAffinityMatrixInitialSigma = [];
         weights = [];
         runtimes;
-        iteration = 1;
+        iteration = 0;
         epsilon;
         sampleSize;
         channels = []
@@ -49,23 +49,7 @@ classdef ContractionClustering
             obj.runtimes = containers.Map({'aff', 'spd', 'clas', 'vis', 'contr', 'rest'}, zeros(1, 6));
         end
         function obj = contract(obj)
-            for iteration = 1:obj.options.maxNumContractionSteps
-                obj.iteration = iteration;
-                obj.contractionSequence(:, :, obj.iteration) = inflateClusters(obj.dataContracted, obj.sampleIndices);
-                obj = obj.calcAffinities();
-                obj = obj.spectralDecompose();
-                obj = obj.performContractionMove();
-                obj = obj.mergeEpsilonClusters();
-                obj = obj.assignClusters();
-%                 obj = obj.recordClusterStats();
-                obj = obj.controlSigma();
-                obj = obj.plotAlgorithmState();
-                obj.printProgress(false);
-                if (obj.checkTerminationCondition())
-                    break;
-                end
-            end
-%             obj.writeStats();
+            obj = obj.steps(obj.options.maxNumContractionSteps);
             obj.emitRuntimeBreakdown();
             obj.emitCondensationSequence();
         end
@@ -93,22 +77,36 @@ classdef ContractionClustering
                                                                         'weights', obj.weights);
             obj.runtimes('aff') = obj.runtimes('aff') + toc;
         end
-        function obj = contractToStablePoint(obj)
-            for iteration = 1:obj.options.maxNumContractionSteps
-                obj.iteration = obj.iteration + 1;
-                obj.contractionSequence(:, :, obj.iteration) = inflateClusters(obj.dataContracted, obj.sampleIndices);
-                obj = obj.calcAffinities();
-                obj = obj.spectralDecompose();
-                obj = obj.performContractionMove();
-                obj = obj.mergeEpsilonClusters();
-                obj = obj.assignClusters();
-                obj = obj.recordClusterStats();
-                obj = obj.controlSigma();
+        function obj = steps(obj, varargin)
+            switch nargin
+                case 1
+                    nsteps = 1;
+                case 2
+                    nsteps = varargin{end};
+            end
+            terminated = false;
+            for step = 0:nsteps
+                for iteration = obj.iteration+1:obj.options.maxNumContractionSteps
+                    obj.iteration = iteration;
+                    obj.contractionSequence(:, :, obj.iteration) = inflateClusters(obj.dataContracted, obj.sampleIndices);
+                    obj = obj.calcAffinities();
+                    obj = obj.spectralDecompose();
+                    obj = obj.performContractionMove();
+                    obj = obj.mergeEpsilonClusters();
+                    obj = obj.assignClusters();
+                    obj = obj.controlSigma();
                     obj = obj.plotAlgorithmState();
-
-                obj.printProgress(true);
-                if (obj.isMetastable( ) || obj.checkTerminationCondition( ))
-                    break;
+                    obj.printProgress(false);
+                    if (obj.checkTerminationCondition())
+                        terminated = true;
+                        break;
+                    end
+                    if (obj.isMetastable())
+                        break;
+                    end
+                end
+                if (terminated)
+                    break
                 end
             end
         end
@@ -180,10 +178,13 @@ classdef ContractionClustering
                 % Plotting samples at contracted position.
                 ax2 = subplot('Position', [0.525, 0.40, 0.425, 0.425]);
                 sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
+                %scatterX(obj.dataContracted, ...
+                %         'colorAssignment', conflateClusterAssignment(obj.options.expertLabels, obj.sampleIndices), ...
+                %         'sizeAssignment', sizeAssignment');
                 scatterX(obj.dataContracted, ...
-                         'colorAssignment', conflateClusterAssignment(obj.options.expertLabels, obj.sampleIndices), ...
+                         'colorAssignment', 1:max(obj.clusterAssignments(obj.iteration, :)), ...
                          'sizeAssignment', sizeAssignment');
-                colormap(ax2, distinguishable_colors(length(unique(obj.options.expertLabels))));
+                colormap(ax2, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
                 ax3 = subplot('Position', [0.05, 0.10, 0.9, 0.225]);
                 switch (obj.options.controlSigmaMethod)
                     case 'nuclearNormStabilization'
@@ -366,14 +367,10 @@ classdef ContractionClustering
             obj.clusterStats = [obj.clusterStats; {stats}];
         end
         function plotClusterHeatMap(obj)
-            stats = obj.clusterStats{end}('centroids');
-            sizes = obj.clusterStats{end}('size');
+            [centroids, sizes] = stats(obj.contractionSequence(:,:,1), obj.clusterAssignments(end,:)'); 
             data = [];
-            for cluster = 1:length(stats)
-               row = [];
-               for channel = 1:length(obj.channels)
-                  row = [row, stats{cluster}(obj.channels{channel})];
-               end
+            for cluster = 1:length(sizes)
+               row = centroids(cluster,:);
                if cluster == 1
                  data = [data; [0, sizes(cluster), row]];
                else
@@ -386,9 +383,11 @@ classdef ContractionClustering
             hmap = HeatMap(data(:,3:end), 'RowLabels', rows, 'ColumnLabels', obj.channels);
             hmap.addXLabel('channel');
             hmap.addYLabel('size of cluster');
-            colormap(hmap, parula);
-            saveas(hmap.plot, strcat(obj.options.asString(), '_heatmap.png'));
-            close all;
+            fig = hmap.plot;
+            colormap(fig, parula);
+            colorbar(fig);
+            saveas(fig, strcat(obj.options.asString(), '_heatmap.png'));
+            close all force;
         end
         function writeStats(obj)
             filename = strcat(obj.options.asString(), '_stats.json');
