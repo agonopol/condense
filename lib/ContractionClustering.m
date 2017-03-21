@@ -391,36 +391,38 @@ classdef ContractionClustering
             colormap(fig, parula);
             colorbar(fig);
             saveas(fig, strcat(obj.options.asString(), '_centroids.png'));
-            close all force;
         end
         function clusterHeatmaps(obj)
+            frame = gcf;
+            set(frame, 'Position', [2068 1 1200 800]);
+            set(frame,'Color','white');
             [~, sizes] = stats(obj.contractionSequence(:,:,1), obj.clusterAssignments(end,:)');
             samples = obj.contractionSequence(:, :, 1);
             cmap =  distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :))));
             offset = 0.1;
             for cluster = 1:length(sizes)
-               width = (sizes(cluster) / sum(sizes)) * 0.85;
+               width = (sizes(cluster) / sum(sizes)) * 0.8;
                fig  = subplot('Position', [offset, 0.1, width, .9]);
                data = samples(obj.clusterAssignments(end,:) == cluster,:);
-               imagesc(fig, data');
+               imagesc(fig, zscore(data'));
                if (cluster == 1)
-                    fig.YAxis.TickLabels = obj.channels';
+                   fig.YAxis.TickLabels = obj.channels';
+                   set(fig,'ytick',1:size(obj.channels));
+               else
+                  set(fig,'ytick',[]);
                end
+               set(fig,'xtick',[]);
                colormap(fig, parula);
-               bar = subplot('Position', [offset, 0.05, width, .05]);
-               imagesc(bar, [cluster]);
+
+               bar = subplot('Position', [offset, 0.05, width, .05], 'Color', cmap(cluster,:));
+               set(bar,'xtick',[]);
+               set(bar,'ytick',[]);
                colormap(bar, cmap);
-               bar.YAxis.Visable = 'off';
-               bar.XAxis.Visable = 'off';
-               xlabel(bar, string(1));
+               xlabel(bar, string(cluster));
                offset = offset + width;
             end
-            colorbar();
-            im = print('-RGBImage');
-            [imind,cm] = rgb2ind(im,256);
-            filename = strcat(obj.options.asString(), '_heatmap.png');
-            imwrite(imind,cm,filename,'png');
-            close all force;
+            frame.InvertHardcopy = 'off';
+            saveas(frame, strcat(obj.options.asString(), '_heatmap.png'));
         end
         function writeStats(obj)
             filename = strcat(obj.options.asString(), '_stats.json');
