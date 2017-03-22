@@ -394,33 +394,43 @@ classdef ContractionClustering
         end
         function clusterHeatmaps(obj)
             frame = gcf;
-            set(frame, 'Position', [2068 1 1200 800]);
+            set(frame, 'Position', [1 1 1500 1000]);
             set(frame,'Color','white');
-            [~, sizes] = stats(obj.contractionSequence(:,:,1), obj.clusterAssignments(end,:)');
             samples = obj.contractionSequence(:, :, 1);
-            cmap =  distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :))));
-            offset = 0.1;
-            for cluster = 1:length(sizes)
-               width = (sizes(cluster) / sum(sizes)) * 0.8;
-               fig  = subplot('Position', [offset, 0.1, width, .9]);
-               data = samples(obj.clusterAssignments(end,:) == cluster,:);
-               imagesc(fig, zscore(data'));
-               if (cluster == 1)
-                   fig.YAxis.TickLabels = obj.channels';
-                   set(fig,'ytick',1:size(obj.channels));
-               else
-                  set(fig,'ytick',[]);
-               end
-               set(fig,'xtick',[]);
-               colormap(fig, parula);
-
-               bar = subplot('Position', [offset, 0.05, width, .05], 'Color', cmap(cluster,:));
-               set(bar,'xtick',[]);
-               set(bar,'ytick',[]);
-               colormap(bar, cmap);
-               xlabel(bar, string(cluster));
-               offset = offset + width;
+            data = samples(obj.clusterAssignments(end,:) == 1,:);
+            branches = max(obj.clusterAssignments(end,:));
+            bins = zeros(branches,1);
+            
+            bins(1) = length(data);
+            cbranch=[1*ones(length(data),1)];  
+            
+            for cluster = 2:branches
+                
+              group = samples(obj.clusterAssignments(end,:) == cluster,:);
+              bins(cluster) = length(group);
+              
+              data = [data; group];
+              cbranch=[cbranch; cluster*ones(length(group),1)];
+             
             end
+            
+            data = zscore(data');
+            fig = subplot('Position', [0.1, 0.1, .8, .8]);
+            imagesc(fig, data);
+            colormap(fig, parula);
+            fig.YAxis.TickLabels = obj.channels;
+            set(fig,'ytick',1:size(obj.channels));
+            set(fig,'xtick',[]);
+            
+            line([cumsum(bins - 1.75) cumsum(bins - 1.75)]', repmat(ylim, length(bins), 1)', 'color', 'k','Linewidth', 1);
+            
+            bar = subplot('Position', [0.1, 0.05, .8, .05]);
+            imagesc(bar, cbranch');
+            colormap(bar, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
+                      
+            set(bar,'xtick', []);
+            set(bar,'ytick',[]);
+            
             frame.InvertHardcopy = 'off';
             saveas(frame, strcat(obj.options.asString(), '_heatmap.png'));
         end

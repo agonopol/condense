@@ -27,8 +27,8 @@ for file = files'
     contractor = ContractionClustering(data, fields(:,2), options);
     contractor = contractor.contract();
     contractor.heatmap();
-    
     clc;
     close all force;
     close all hidden;
 end
+
