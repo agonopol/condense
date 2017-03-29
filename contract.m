@@ -12,13 +12,14 @@ options.numDiffusionSteps = 3;
 options.fastStop = true;
 
 files = dir('data/*.fcs');
+
 for file = files'
     path = fullfile(file.folder, file.name);
     obj = CyTOFData(path);
     obj.dataTransformed = CyTOFData.transform(obj.data, 1);
     fields = channels(obj);
     data = obj.dataTransformed(:, cell2mat(fields(:,1))');
-    data = datasample(data, min(length(data), 1600),'Replace', false);
+%     data = datasample(data, min(length(data), 2000),'Replace', false);
    
     [~, name, ~] = fileparts(path);
     options.destination = fullfile(pwd(), 'results', 'contract', name, '//');
@@ -27,6 +28,8 @@ for file = files'
     contractor = ContractionClustering(data, fields(:,2), options);
     contractor = contractor.contract();
     contractor.heatmap();
+    obj = obj.addClusterAssigments(contractor.clusterAssignments(end, :));
+    obj.writeData(strrep(path, 'data', 'clustered'));
     clc;
     close all force;
     close all hidden;
