@@ -95,7 +95,7 @@ classdef ContractionClustering
                     obj = obj.mergeEpsilonClusters();
                     obj = obj.assignClusters();
                     obj = obj.controlSigma();
-                    obj = obj.plotAlgorithmState();
+                    % obj = obj.plotAlgorithmState();
                     obj.printProgress(false);
                     if (obj.checkTerminationCondition())
                         terminated = true;
