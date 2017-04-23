@@ -71,10 +71,10 @@ classdef CyTOFData
                 end
             end
         end
-        function obj = addClusterAssigments(obj, assigment)
+        function obj = addClusterAssigments(obj, index, assigment)
            obj.channelNames{length(obj.channelNames) + 1} = 'Cluster';
            obj.markerNames{length(obj.markerNames) + 1} = 'Cluster';
-           obj.data = [obj.data assigment'];
+           obj.data(index, end+1) = assigment;
         end
         function writeData(obj, filename)
             fca_writefcs(filename, obj.data, obj.markerNames, obj.channelNames);

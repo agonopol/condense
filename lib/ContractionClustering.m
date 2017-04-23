@@ -95,7 +95,7 @@ classdef ContractionClustering
                     obj = obj.mergeEpsilonClusters();
                     obj = obj.assignClusters();
                     obj = obj.controlSigma();
-                    % obj = obj.plotAlgorithmState();
+                    obj = obj.plotAlgorithmState();
                     obj.printProgress(false);
                     if (obj.checkTerminationCondition())
                         terminated = true;
@@ -170,56 +170,52 @@ classdef ContractionClustering
                         currentLengthIterations = 2*currentLengthIterations;
                     end
                 end
-                % Plotting samples at original position.
-                ax1 = subplot('Position', [0.05, 0.40, 0.425, 0.425]);
-                scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :));
-                colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
-                lims = axis;
-                % Plotting samples at contracted position.
-                ax2 = subplot('Position', [0.525, 0.40, 0.425, 0.425]);
-                sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
-                %scatterX(obj.dataContracted, ...
-                %         'colorAssignment', conflateClusterAssignment(obj.options.expertLabels, obj.sampleIndices), ...
-                %         'sizeAssignment', sizeAssignment');
-                scatterX(obj.dataContracted, ...
+                if (obj.options.phateEmbedding)
+                    % Plotting samples at original position.
+                    ax1 = subplot('Position', [0.05, 0.40, 0.425, 0.425]);
+                    [~, npca] = size(obj.contractionSequence(:, :, 1));
+                    embedding = phate(obj.contractionSequence(:, :, 1), 'npca', npca, 'mds_method', 'cmds');
+                    scatterX(embedding, 'colorAssignment', obj.clusterAssignments(obj.iteration, :));
+                    colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
+                    lims = axis;
+                    % Plotting samples at contracted position.
+                    ax2 = subplot('Position', [0.525, 0.40, 0.425, 0.425]);
+                    sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
+                    scatterX(embedding);
+                    colormap(ax2, 'gray');
+                    hold on;
+                    [centroids, sizes] = stats(embedding, obj.clusterAssignments(obj.iteration, :));
+                    scatter(centroids(:, 1), centroids(:, 2), sizes, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))), 'o', 'filled');
+                    hold off;
+                else
+                    % Plotting samples at original position.
+                    ax1 = subplot('Position', [0.05, 0.40, 0.425, 0.425]);
+                    scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :));
+                    colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
+                    lims = axis;
+                    % Plotting samples at contracted position.
+                    ax2 = subplot('Position', [0.525, 0.40, 0.425, 0.425]);
+                    sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
+                    scatterX(obj.dataContracted, ...
                          'colorAssignment', 1:max(obj.clusterAssignments(obj.iteration, :)), ...
                          'sizeAssignment', sizeAssignment');
-                colormap(ax2, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
-                ax3 = subplot('Position', [0.05, 0.10, 0.9, 0.225]);
-                switch (obj.options.controlSigmaMethod)
-                    case 'nuclearNormStabilization'
-                        % Plotting eigenvalue map.
-                        colormap(ax3, parula(64));
-                        eigenvalueMap = repmat(min(min(obj.eigenvalueSequence)), size(obj.eigenvalueSequence, 2), currentLengthIterations);
-                        eigenvalueMap(1:size(obj.eigenvalueSequence, 2), 1:size(obj.eigenvalueSequence, 1)) = obj.eigenvalueSequence';
-                        imagesc(eigenvalueMap);
-                        for j = 1:size(sigmaBumps, 2)
-                            line([sigmaBumps(j) sigmaBumps(j)], ylim, 'Color', 'red', 'LineWidth', 2);
-                        end
-                    case 'movementStabilization'
-                        if (obj.iteration == 1)
-                            relativeMovement = [ NaN ];
-                        elseif (isequal(size(obj.dataContracted), size(previousDataContracted)))
-                            relativeMovement = [relativeMovement ...
-                                                max(sum(abs(obj.dataContracted-previousDataContracted)))/max(max(obj.dataContracted)-min(obj.dataContracted))+eps];
-                        else
-                            relativeMovement = [relativeMovement NaN];
-                        end
-                        previousDataContracted = obj.dataContracted;
-                        plot(relativeMovement, 'o');
-                        set(gca, 'YScale', 'log')
-                        ylim([eps, max(max(relativeMovement), 1)])
-                        set(gca, 'YTick', sort([eps, get(gca, 'YTick')]));
-                        yticks = get(gca, 'YTick');
-                        ytickLabels = {'eps'};
-                        for i = 2:length(yticks)
-                            ytickLabels{i} = num2str(yticks(i));
-                        end
-                        set(gca,'yticklabel', ytickLabels);
-                        line([0 currentLengthIterations], [obj.options.thresholdControlSigma obj.options.thresholdControlSigma], 'LineStyle', '--')
-                        for j = 1:size(sigmaBumps, 2)
-                            line([sigmaBumps(j) sigmaBumps(j)], ylim, 'Color', 'red', 'LineWidth', 2);
-                        end
+                    colormap(ax2, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
+                end
+        ax3 = subplot('Position', [0.05, 0.10, 0.9, 0.225]);
+                if (obj.iteration == 1)
+                    relativeMovement = [ NaN ];
+                elseif (isequal(size(obj.dataContracted), size(previousDataContracted)))
+                    relativeMovement = [relativeMovement ...
+                                        max(sum(abs(obj.dataContracted-previousDataContracted)))/max(max(obj.dataContracted)-min(obj.dataContracted))+eps];
+                else
+                    relativeMovement = [relativeMovement NaN];
+                end
+                previousDataContracted = obj.dataContracted;
+                plot(linspace(0,obj.iteration, obj.iteration), relativeMovement);
+                ylim([eps, max(max(relativeMovement), 1)])
+                line([0 currentLengthIterations], [obj.options.thresholdControlSigma obj.options.thresholdControlSigma], 'LineStyle', '--')
+                for j = 1:size(sigmaBumps, 2)
+                    line([sigmaBumps(j) sigmaBumps(j)], ylim, 'Color', 'red', 'LineWidth', 2);
                 end
                 % Plotting Header Line
                 subplot('Position', [0.05, 0.85, 0.9, 0.125], 'Visible', 'off')
@@ -384,10 +380,18 @@ classdef ContractionClustering
             data=sortrows(data);
             rows = data(:,2);
             data = zscore(data);
-            hmap = HeatMap(data(:,3:end), 'RowLabels', rows, 'ColumnLabels', obj.channels);
-            hmap.addXLabel('channel');
-            hmap.addYLabel('size of cluster');
-            fig = hmap.plot;
+            frame = gcf;
+            fig = subplot('Position', [0.1 0.1 0.8 0.8]);
+            imagesc(fig, data(:,3:end));
+            
+            fig.XAxis.TickLabels = obj.channels;
+            set(fig,'xtick',1:size(obj.channels));
+            xlabel('channel');
+            
+            fig.YAxis.TickLabels = rows;
+            set(fig,'ytick',1:size(rows));
+            ylabel('size of cluster');
+
             colormap(fig, parula);
             colorbar(fig);
             saveas(fig, strcat(obj.options.asString(), '_centroids.png'));
@@ -414,22 +418,22 @@ classdef ContractionClustering
              
             end
             
-            data = zscore(data');
             fig = subplot('Position', [0.1, 0.1, .8, .8]);
-            imagesc(fig, data);
+            
+            imagesc(fig, zscorep(data, .95)');
             colormap(fig, parula);
             fig.YAxis.TickLabels = obj.channels;
             set(fig,'ytick',1:size(obj.channels));
             set(fig,'xtick',[]);
             
-            line([cumsum(bins - 1.75) cumsum(bins - 1.75)]', repmat(ylim, length(bins), 1)', 'color', 'k','Linewidth', 1);
+            line([cumsum(bins) cumsum(bins)]', repmat(ylim, length(bins), 1)', 'color', 'k','Linewidth', 1);
             
             bar = subplot('Position', [0.1, 0.05, .8, .05]);
             imagesc(bar, cbranch');
-            colormap(bar, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
+            colormap(bar, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
                       
             set(bar,'xtick', []);
-            set(bar,'ytick',[]);
+            set(bar,'ytick', []);
             
             frame.InvertHardcopy = 'off';
             saveas(frame, strcat(obj.options.asString(), '_heatmap.png'));
