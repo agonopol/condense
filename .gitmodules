@@ -1,0 +1,3 @@
+[submodule "PHATE"]
+	path = PHATE
+	url = https://github.com/SmitaKrishnaswamy/PHATE

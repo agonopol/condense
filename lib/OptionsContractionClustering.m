@@ -24,6 +24,7 @@ classdef OptionsContractionClustering
         modeCalcDistances = 'normal';
         epsilonClusterIdentificationMethod = 'dynamicSigmaFraction';
         prefixFileNames = '';
+        phateEmbedding = false;
     end
     methods
         function obj = OptionsContractionClustering(varargin)
