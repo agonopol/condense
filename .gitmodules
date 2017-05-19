@@ -1,3 +1,6 @@
 [submodule "PHATE"]
 	path = PHATE
 	url = https://github.com/SmitaKrishnaswamy/PHATE
+[submodule "lib/sanky/template"]
+	path = lib/sanky/template
+	url = https://github.com/wesleyks/shiny-template.git

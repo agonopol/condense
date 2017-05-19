@@ -15,6 +15,7 @@ classdef OptionsContractionClustering
         expertLabels = [];
         expId = '';
         emitRuntimeBreakdown = false;
+        maxClusters = 30;
         emitCondensationSequence = false;
         mergeEpsilonClusters = true;
         thresholdControlSigma = 0.5;
