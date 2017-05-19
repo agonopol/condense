@@ -65,12 +65,12 @@ classdef ContractionClustering
                                         'indentationLevel', obj.options.indentationLevel + 1, ...
                                         'verbosityLevel', obj.options.verbosityLevel - 1);
             obj.weights = cellfun(@length, obj.sampleIndices);
-            if (obj.requireSpectralDecomposition())
-                obj.normalizedAffinityMatrixInitialSigma = calcNormalizedAffinityMatrix(D, Z, ...
-                                                                                        'sigma', obj.options.initialSigma, ...
-                                                                                        'exponent', 2, ...
-                                                                                        'weights', obj.weights);
-            end
+             if (obj.requireSpectralDecomposition())
+                 obj.normalizedAffinityMatrixInitialSigma = calcNormalizedAffinityMatrix(D, Z, ...
+                                                                                         'sigma', obj.options.initialSigma, ...
+                                                                                         'exponent', 2, ...
+                                                                                         'weights', obj.weights);
+             end
             obj.normalizedAffinityMatrix = calcNormalizedAffinityMatrix(D, Z, ...
                                                                         'sigma', obj.currentSigma, ...
                                                                         'exponent', 2, ...
@@ -172,14 +172,14 @@ classdef ContractionClustering
                 end
                 if (obj.options.phateEmbedding)
                     % Plotting samples at original position.
-                    ax1 = subplot('Position', [0.05, 0.40, 0.425, 0.425]);
+                    ax1 = subplot('Position', [0.05, 0.125, 0.425, 0.8]);
                     [~, npca] = size(obj.contractionSequence(:, :, 1));
                     embedding = phate(obj.contractionSequence(:, :, 1), 'npca', npca, 'mds_method', 'cmds');
                     scatterX(embedding, 'colorAssignment', obj.clusterAssignments(obj.iteration, :));
                     colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
                     lims = axis;
                     % Plotting samples at contracted position.
-                    ax2 = subplot('Position', [0.525, 0.40, 0.425, 0.425]);
+                    ax2 = subplot('Position', [0.525, 0.125, 0.425, 0.8]);
                     sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
                     scatterX(embedding);
                     colormap(ax2, 'gray');
@@ -189,36 +189,33 @@ classdef ContractionClustering
                     hold off;
                 else
                     % Plotting samples at original position.
-                    ax1 = subplot('Position', [0.05, 0.40, 0.425, 0.425]);
-                    scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :));
+                    ax1 = subplot('Position', [0.05, 0.125, 0.425, 0.8]);
+                    scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :), 'dimensionalityReductionMethod', 'tsne');
                     colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
                     lims = axis;
                     % Plotting samples at contracted position.
-                    ax2 = subplot('Position', [0.525, 0.40, 0.425, 0.425]);
+                    ax2 = subplot('Position', [0.525, 0.125, 0.425, 0.8]);
                     sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
                     scatterX(obj.dataContracted, ...
                          'colorAssignment', 1:max(obj.clusterAssignments(obj.iteration, :)), ...
                          'sizeAssignment', sizeAssignment');
                     colormap(ax2, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
                 end
-        ax3 = subplot('Position', [0.05, 0.10, 0.9, 0.225]);
-                if (obj.iteration == 1)
-                    relativeMovement = [ NaN ];
-                elseif (isequal(size(obj.dataContracted), size(previousDataContracted)))
-                    relativeMovement = [relativeMovement ...
-                                        max(sum(abs(obj.dataContracted-previousDataContracted)))/max(max(obj.dataContracted)-min(obj.dataContracted))+eps];
-                else
-                    relativeMovement = [relativeMovement NaN];
+                bar = subplot('Position', [0.05, 0.05, 0.9, 0.05]);
+                data = obj.clusterAssignments(end,:);
+                branches = max(obj.clusterAssignments(end,:));
+                cbranch=[1*ones(length(obj.clusterAssignments(end, obj.clusterAssignments(end,:) == 1)),1)];  
+            
+                for cluster = 2:branches
+                   group = obj.clusterAssignments(end, obj.clusterAssignments(end,:) == cluster);
+                   cbranch=[cbranch; cluster*ones(length(group),1)];
                 end
-                previousDataContracted = obj.dataContracted;
-                plot(linspace(0,obj.iteration, obj.iteration), relativeMovement);
-                ylim([eps, max(max(relativeMovement), 1)])
-                line([0 currentLengthIterations], [obj.options.thresholdControlSigma obj.options.thresholdControlSigma], 'LineStyle', '--')
-                for j = 1:size(sigmaBumps, 2)
-                    line([sigmaBumps(j) sigmaBumps(j)], ylim, 'Color', 'red', 'LineWidth', 2);
-                end
+                imagesc(bar, cbranch');
+                colormap(bar, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
+                set(bar,'xtick', []);
+                set(bar,'ytick', []);
                 % Plotting Header Line
-                subplot('Position', [0.05, 0.85, 0.9, 0.125], 'Visible', 'off')
+                subplot('Position', [0.05, 0.925, 0.935, 0.125], 'Visible', 'off')
                 toWrite = ['Iteration ' num2str(obj.iteration) ...
                            ', \sigma = ' num2str(obj.currentSigma) ...
                            ', #Clusters = ' num2str(length(unique(obj.clusterAssignments(obj.iteration, :)))) ...
@@ -238,7 +235,7 @@ classdef ContractionClustering
             numClusters = length(unique(obj.clusterAssignments(obj.iteration, :)));
             if (numClusters == 1 && obj.iteration > 5)
                 rsl = true;
-            elseif (obj.options.fastStop && obj.sampleSize ~= numClusters)
+            elseif (obj.options.fastStop && obj.sampleSize ~= numClusters && numClusters < obj.options.maxClusters)
                 rsl = true;
             end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
@@ -349,25 +346,17 @@ classdef ContractionClustering
             rsl = (   strcmp(obj.options.clusterAssignmentMethod, 'spectral') ...
                    || strcmp(obj.options.controlSigmaMethod, 'nuclearNormStabilization'));
         end
-        function obj = recordClusterStats(obj)
-            centroids = {};
-            sizes = [];
-            assigments = obj.clusterAssignments(end,:)';
-            for cluster = 1:max(assigments)
-                index = find(assigments == cluster);
-                data = obj.contractionSequence(index,:,1);
-                centroids{end+1} = containers.Map(obj.channels, mean(data', 2)');
-                sizes = [sizes, length(index)];
+        function heatmap(obj, fields)
+            if (nargin < 2)
+                fields = obj.channels;
             end
-            stats = containers.Map({'centroids', 'size'}, {centroids, sizes});
-            obj.clusterStats = [obj.clusterStats; {stats}];
+            obj.centroidHeatmap(fields);
+            obj.clusterHeatmaps(fields);
         end
-        function heatmap(obj)
-            obj.centroidHeatmap();
-            obj.clusterHeatmaps();
-        end
-        function centroidHeatmap(obj)
-            [centroids, sizes] = stats(obj.contractionSequence(:,:,1), obj.clusterAssignments(end,:)'); 
+        function centroidHeatmap(obj, fields)
+            fields = sort(fields);
+            index = find(ismember(sort(obj.channels), fields));
+            [centroids, sizes] = stats(obj.contractionSequence(:,index,1), obj.clusterAssignments(end,:)'); 
             data = [];
             for cluster = 1:length(sizes)
                row = centroids(cluster,:);
@@ -384,8 +373,8 @@ classdef ContractionClustering
             fig = subplot('Position', [0.1 0.1 0.8 0.8]);
             imagesc(fig, data(:,3:end));
             
-            fig.XAxis.TickLabels = obj.channels;
-            set(fig,'xtick',1:size(obj.channels));
+            fig.XAxis.TickLabels = fields';
+            set(fig,'xtick',1:length(fields));
             xlabel('channel');
             
             fig.YAxis.TickLabels = rows;
@@ -396,11 +385,13 @@ classdef ContractionClustering
             colorbar(fig);
             saveas(fig, strcat(obj.options.asString(), '_centroids.png'));
         end
-        function clusterHeatmaps(obj)
+        function clusterHeatmaps(obj, fields)
+            fields = sort(fields);
+            index = find(ismember(sort(obj.channels), fields));
             frame = gcf;
             set(frame, 'Position', [1 1 1500 1000]);
             set(frame,'Color','white');
-            samples = obj.contractionSequence(:, :, 1);
+            samples = obj.contractionSequence(:, index, 1);
             data = samples(obj.clusterAssignments(end,:) == 1,:);
             branches = max(obj.clusterAssignments(end,:));
             bins = zeros(branches,1);
@@ -415,15 +406,14 @@ classdef ContractionClustering
               
               data = [data; group];
               cbranch=[cbranch; cluster*ones(length(group),1)];
-             
             end
             
             fig = subplot('Position', [0.1, 0.1, .8, .8]);
             
             imagesc(fig, zscorep(data, .95)');
             colormap(fig, parula);
-            fig.YAxis.TickLabels = obj.channels;
-            set(fig,'ytick',1:size(obj.channels));
+            fig.YAxis.TickLabels = fields';
+            set(fig,'ytick',1:length(fields));
             set(fig,'xtick',[]);
             
             line([cumsum(bins) cumsum(bins)]', repmat(ylim, length(bins), 1)', 'color', 'k','Linewidth', 1);
@@ -437,20 +427,6 @@ classdef ContractionClustering
             
             frame.InvertHardcopy = 'off';
             saveas(frame, strcat(obj.options.asString(), '_heatmap.png'));
-        end
-        function writeStats(obj)
-            filename = strcat(obj.options.asString(), '_stats.json');
-            fid = fopen(filename,'wt');
-            if (obj.options.fastStop)
-                fprintf(fid, jsonencode(obj.clusterStats{end}));
-                fprintf(fid, '\n');
-            else
-                for i = 1:length(obj.clusterStats)
-                    fprintf(fid, jsonencode(obj.clusterStats{i}));
-                    fprintf(fid, '\n');
-                end
-            end
-            fclose(fid);
         end
         function printProgress(obj, forcePrint)
             persistent timeLastPrint;
@@ -490,15 +466,14 @@ classdef ContractionClustering
                 if checkTerminationCondition(obj)
                     saveas(gcf, strcat(obj.options.asString(), '_clusters.png'))
                 end
+            end
+            im = print('-RGBImage');
+            [imind,cm] = rgb2ind(im,256);
+            filename = strcat(obj.options.asString(), '_animation.gif');
+            if obj.iteration == 1
+                imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0);
             else
-                im = print('-RGBImage');
-                [imind,cm] = rgb2ind(im,256);
-                filename = strcat(obj.options.asString(), '_animation.gif');
-                if obj.iteration == 1
-                    imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0);
-                else
-                    imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0);
-                end
+                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0);
             end
         end
         function emitClusterResults(obj)
