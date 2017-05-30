@@ -4,3 +4,6 @@
 [submodule "lib/sanky/template"]
 	path = lib/sanky/template
 	url = https://github.com/wesleyks/shiny-template.git
+[submodule "lib/sanky"]
+	path = lib/sanky
+	url = https://github.com/agonopol/msanky
