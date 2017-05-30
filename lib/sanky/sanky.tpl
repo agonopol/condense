@@ -7,9 +7,9 @@
 
       function drawChart() {
         var data = new google.visualization.DataTable();
-        data.addColumn('string', 'From');
-        data.addColumn('string', 'To');
-        data.addColumn('number', 'Cells');
+        data.addColumn('string', 'from');
+        data.addColumn('string', 'to');
+        data.addColumn('number', 'cells');
         data.addRows([
           {{ matrix }}
         ]);
@@ -18,6 +18,14 @@
         var options = {
           width: 1200,
           hieght: 1200,
+          sankey: {
+            node: {
+                    colors: [{{ colors }}]
+                },
+            link: {
+                    colorMode: 'gradient'
+                }
+            }
         };
 
         // Instantiates and draws our chart, passing in some options.
