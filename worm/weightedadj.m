@@ -1,5 +1,7 @@
 function [neurons, matrix] = weightedadj(data)
     neurons = union(unique(data.Neuron1), unique(data.Neuron2));
+    neurons = cellfun(@flip, sort(cellfun(@flip, cellstr(neurons), 'UniformOutput', false)), 'UniformOutput', false);
+    neurons = categorical(neurons);
     sections = unique(data.EMSection);
     matrix = zeros(length(neurons), length(neurons));
     for i = 1:length(sections)
@@ -12,3 +14,4 @@ function [neurons, matrix] = weightedadj(data)
         end
     end
 end
+

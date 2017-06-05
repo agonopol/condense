@@ -6,6 +6,7 @@ function scatterX(M, varargin)
     densityColoring = false;
     addJitter = true;
     transparency = 0.5;
+    labels = [];
     for i=1:length(varargin)-1
         if (strcmp(varargin{i}, 'dimensionalityReductionMethod'))
             dimensionalityReductionMethod = varargin{i+1};
@@ -24,6 +25,9 @@ function scatterX(M, varargin)
         end
         if (strcmp(varargin{i}, 'transparency'))
             transparency = varargin{i+1};
+        end
+        if (strcmp(varargin{i}, 'labels'))
+            labels = varargin{i+1};
         end
     end
 
@@ -61,8 +65,15 @@ function scatterX(M, varargin)
             s = scatter(M_toPlot(:,1), M_toPlot(:,2), sizeAssignment, colorAssignment, 'filled');
             alpha(s, transparency);
         end
+        if ( not(isempty(labels)) )
+            dx = 0.1; dy = 0.1;
+            x = M_toPlot(:,1) + dx;
+            y = M_toPlot(:,2) + dy;
+            text(x+dx, y+dy, labels, 'FontSize', 6);
+        end
     elseif (size(M_toPlot, 2) == 3)
         s = scatter3(M_toPlot(:,1), M_toPlot(:,2), M_toPlot(:,3), sizeAssignment, colorAssignment, 'filled');
         alpha(s, transparency);
     end
+    
 end

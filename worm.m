@@ -16,7 +16,7 @@ options.frequencyMergingEpsilonClusters = 'always'; %always,uponMetastability%
 options.controlSigmaMethod = 'nuclearNormStabilization'; %nuclearNormStabilization,movementStabilization
 options.numDiffusionSteps = 3;
 options.fastStop = true;
-options.maxClusters = 10;
+options.maxClusters = 7;
 options.phateEmbedding = false;
 
 files = dir('worm/*.csv');

@@ -150,8 +150,6 @@ classdef ContractionClustering
             persistent lastSigma;
             persistent sigmaBumps;
             persistent currentLengthIterations;
-            persistent relativeMovement;
-            persistent previousDataContracted;
             if (obj.options.plotAnimation)
                 tic
                 if obj.iteration == 1
@@ -177,10 +175,8 @@ classdef ContractionClustering
                     embedding = phate(obj.contractionSequence(:, :, 1), 'npca', npca, 'mds_method', 'cmds');
                     scatterX(embedding, 'colorAssignment', obj.clusterAssignments(obj.iteration, :));
                     colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
-                    lims = axis;
                     % Plotting samples at contracted position.
                     ax2 = subplot('Position', [0.525, 0.125, 0.425, 0.8]);
-                    sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
                     scatterX(embedding);
                     colormap(ax2, 'gray');
                     hold on;
@@ -190,7 +186,9 @@ classdef ContractionClustering
                 else
                     % Plotting samples at original position.
                     ax1 = subplot('Position', [0.05, 0.125, 0.425, 0.8]);
-                    scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :), 'dimensionalityReductionMethod', 'tsne');
+                    scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :),...
+                                'dimensionalityReductionMethod', 'tsne', ...
+                                'labels', obj.channels);
                     colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
                     lims = axis;
                     % Plotting samples at contracted position.
@@ -235,7 +233,7 @@ classdef ContractionClustering
             numClusters = length(unique(obj.clusterAssignments(obj.iteration, :)));
             if (numClusters == 1 && obj.iteration > 5)
                 rsl = true;
-            elseif (obj.options.fastStop && obj.sampleSize ~= numClusters && numClusters < obj.options.maxClusters)
+            elseif (obj.options.fastStop && obj.sampleSize ~= numClusters && numClusters <= obj.options.maxClusters)
                 rsl = true;
             end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
@@ -462,14 +460,22 @@ classdef ContractionClustering
             end
         end
         function saveFigureAsAnimationFrame(obj)
+            rez=1200; 
+            f=gcf;
+            figpos=getpixelposition(f);
+            resolution=get(0,'ScreenPixelsPerInch'); 
+            set(f,'paperunits','inches','papersize',figpos(3:4)/resolution,...
+                        'paperposition',[0 0 figpos(3:4)/resolution]);
+            im = print('-RGBImage');
+            [imind,cm] = rgb2ind(im,256);
             if (obj.options.fastStop) 
                 if checkTerminationCondition(obj)
                     saveas(gcf, strcat(obj.options.asString(), '_clusters.png'))
                 end
             end
-            im = print('-RGBImage');
-            [imind,cm] = rgb2ind(im,256);
+            
             filename = strcat(obj.options.asString(), '_animation.gif');
+            
             if obj.iteration == 1
                 imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0);
             else
