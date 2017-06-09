@@ -468,22 +468,15 @@ classdef ContractionClustering
                         'paperposition',[0 0 figpos(3:4)/resolution]);
             im = print('-RGBImage');
             [imind,cm] = rgb2ind(im,256);
-            if (obj.options.fastStop) 
-                if checkTerminationCondition(obj)
-                    saveas(gcf, strcat(obj.options.asString(), '_clusters.png'))
-                end
-            end
-            
-            filename = strcat(obj.options.asString(), '_animation.gif');
+            snapshot = char(strcat(obj.options.destination, 'step-', string(obj.iteration), '-clusters.png'));
+            saveas(gcf, snapshot);
+            filename = char(strcat(obj.options.destination, 'animated.gif'));
             
             if obj.iteration == 1
                 imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0);
             else
                 imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0);
             end
-        end
-        function emitClusterResults(obj)
-            dlmwrite(strcat(obj.options.prefixFileNames, obj.options.asString(), '_clusterAssignments.txt'), obj.clusterAssignments);
         end
     end
 end
