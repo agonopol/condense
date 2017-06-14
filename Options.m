@@ -26,6 +26,8 @@ classdef Options
         epsilonClusterIdentificationMethod = 'dynamicSigmaFraction';
         prefixFileNames = '';
         phateEmbedding = false;
+        labelfn = @(clusters, labels) labels;
+        sizefn = @(clusters, labels) ones(length(labels), 1);
     end
     methods
         function obj = Options(varargin)

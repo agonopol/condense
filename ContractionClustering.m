@@ -188,7 +188,8 @@ classdef ContractionClustering
                     ax1 = subplot('Position', [0.05, 0.125, 0.425, 0.8]);
                     scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :),...
                                 'dimensionalityReductionMethod', 'tsne', ...
-                                'labels', obj.channels);
+                                'sizeAssignment', obj.options.sizefn(obj.clusterAssignments(obj.iteration, :), obj.channels), ...
+                                'labels', obj.options.labelfn(obj.clusterAssignments(obj.iteration, :), obj.channels));
                     colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
                     lims = axis;
                     % Plotting samples at contracted position.
@@ -381,7 +382,7 @@ classdef ContractionClustering
 
             colormap(fig, parula);
             colorbar(fig);
-            saveas(fig, strcat(obj.options.asString(), '_centroids.png'));
+            saveas(fig, strcat(obj.options.destination, '_centroids.png'));
         end
         function clusterHeatmaps(obj, fields)
             fields = sort(fields);
@@ -424,7 +425,7 @@ classdef ContractionClustering
             set(bar,'ytick', []);
             
             frame.InvertHardcopy = 'off';
-            saveas(frame, strcat(obj.options.asString(), '_heatmap.png'));
+            saveas(frame, strcat(obj.options.destination, '_heatmap.png'));
         end
         function printProgress(obj, forcePrint)
             persistent timeLastPrint;
@@ -468,22 +469,15 @@ classdef ContractionClustering
                         'paperposition',[0 0 figpos(3:4)/resolution]);
             im = print('-RGBImage');
             [imind,cm] = rgb2ind(im,256);
-            if (obj.options.fastStop) 
-                if checkTerminationCondition(obj)
-                    saveas(gcf, strcat(obj.options.asString(), '_clusters.png'))
-                end
-            end
-            
-            filename = strcat(obj.options.asString(), '_animation.gif');
+            snapshot = char(strcat(obj.options.destination, 'step-', string(obj.iteration), '-clusters.png'));
+            saveas(gcf, snapshot);
+            filename = char(strcat(obj.options.destination, 'animated.gif'));
             
             if obj.iteration == 1
-                imwrite(imind,cm,filename,'gif', 'Loopcount',inf,'DelayTime',0);
+                imwrite(imind,cm,filename,'gif','Loopcount',inf,'DelayTime',0);
             else
-                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',0);
+                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',1);
             end
-        end
-        function emitClusterResults(obj)
-            dlmwrite(strcat(obj.options.prefixFileNames, obj.options.asString(), '_clusterAssignments.txt'), obj.clusterAssignments);
         end
     end
 end
