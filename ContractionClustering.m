@@ -152,10 +152,10 @@ classdef ContractionClustering
             persistent currentLengthIterations;
             if (obj.options.plotAnimation)
                 tic
+                set(gcf, 'Position', [2068 1 1200 800]);
                 if obj.iteration == 1
                     sigmaBumps = [];
                     lastSigma = obj.currentSigma;
-                    set(gcf, 'Position', [2068 1 1200 800]);
                     currentLengthIterations = 50;
                     relativeMovement = [];
                     previousDataContracted = obj.dataContracted;
@@ -219,11 +219,7 @@ classdef ContractionClustering
                            ', \sigma = ' num2str(obj.currentSigma) ...
                            ', #Clusters = ' num2str(length(unique(obj.clusterAssignments(obj.iteration, :)))) ...
                            ', #Samples = ' num2str(size(obj.dataContracted, 1))];
-                if obj.iteration == 1
-                    myTextObj = text(0, 0.5, toWrite, 'FontSize', 20);
-                else
-                    set(myTextObj, 'String', toWrite);
-                end
+                myTextObj = text(0, 0.5, toWrite, 'FontSize', 20);
                 obj.saveFigureAsAnimationFrame();
                 obj.runtimes('vis') = obj.runtimes('vis') + toc;
             end
@@ -382,7 +378,7 @@ classdef ContractionClustering
 
             colormap(fig, parula);
             colorbar(fig);
-            saveas(fig, strcat(obj.options.asString(), '_centroids.png'));
+            saveas(fig, strcat(obj.options.destination, 'centroids.png'));
         end
         function clusterHeatmaps(obj, fields)
             fields = sort(fields);
@@ -425,7 +421,7 @@ classdef ContractionClustering
             set(bar,'ytick', []);
             
             frame.InvertHardcopy = 'off';
-            saveas(frame, strcat(obj.options.asString(), '_heatmap.png'));
+            saveas(frame, strcat(obj.options.destination, 'heatmap.png'));
         end
         function printProgress(obj, forcePrint)
             persistent timeLastPrint;
@@ -478,6 +474,7 @@ classdef ContractionClustering
             else
                 imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',1);
             end
+            close all;
         end
     end
 end
