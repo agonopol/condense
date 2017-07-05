@@ -60,29 +60,22 @@ classdef ContractionClustering
                 case 2
                     nsteps = varargin{end};
             end
-            terminated = false;
-            for step = 0:nsteps
-                for iteration = obj.iteration+1:obj.options.maxNumContractionSteps
-                    obj.iteration = iteration;
-                    obj.contractionSequence(:, :, obj.iteration) = inflateClusters(obj.dataContracted, obj.sampleIndices);
-                    obj = obj.calcAffinities();
-                    obj = obj.spectralDecompose();
-                    obj = obj.performContractionMove();
-                    obj = obj.mergeEpsilonClusters();
-                    obj = obj.assignClusters();
-                    obj = obj.controlSigma();
-                    obj = obj.plotAlgorithmState();
-                    obj.printProgress(false);
-                    if (obj.checkTerminationCondition())
-                        terminated = true;
-                        break;
-                    end
-                    if (obj.isMetastable())
-                        break;
-                    end
-                end
-                if (terminated)
-                    break
+            if (obj.iteration == 0)
+                obj.iteration = 1;
+            end
+            for iteration = obj.iteration:obj.iteration+nsteps - 1
+                obj.iteration = iteration;
+                obj.contractionSequence(:, :, obj.iteration) = inflateClusters(obj.dataContracted, obj.sampleIndices);
+                obj = obj.calcAffinities();
+                obj = obj.spectralDecompose();
+                obj = obj.performContractionMove();
+                obj = obj.mergeEpsilonClusters();
+                obj = obj.assignClusters();
+                obj = obj.controlSigma();
+                obj = obj.plotAlgorithmState();
+                obj.printProgress(false);
+                if (obj.checkTerminationCondition())
+                    break;
                 end
             end
         end
