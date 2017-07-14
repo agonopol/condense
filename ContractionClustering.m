@@ -72,7 +72,9 @@ classdef ContractionClustering
                 obj = obj.mergeEpsilonClusters();
                 obj = obj.assignClusters();
                 obj = obj.controlSigma();
-                obj = obj.plotAlgorithmState();
+                if (obj.options.plotAnimation)
+                    obj.options.plotfn(obj);
+                end
                 obj.printProgress(false);
                 if (obj.checkTerminationCondition())
                     break;
@@ -137,85 +139,6 @@ classdef ContractionClustering
             obj.clusterAssignments(obj.iteration, :) = inflateClusters(clusterAssignment, ...
                                                                        obj.sampleIndices);
             obj.runtimes('clas') = obj.runtimes('clas') + toc;
-        end
-        function obj = plotAlgorithmState(obj)
-            persistent myTextObj;
-            persistent lastSigma;
-            persistent sigmaBumps;
-            persistent currentLengthIterations;
-            if (obj.options.plotAnimation)
-                tic
-                set(gcf, 'Position', [2068 1 1200 800]);
-                if obj.iteration == 1
-                    sigmaBumps = [];
-                    lastSigma = obj.currentSigma;
-                    currentLengthIterations = 50;
-                    relativeMovement = [];
-                    previousDataContracted = obj.dataContracted;
-                else
-                    if (obj.currentSigma ~= lastSigma)
-                        lastSigma = obj.currentSigma;
-                        sigmaBumps = [sigmaBumps obj.iteration];
-                    end
-                    if (obj.iteration > currentLengthIterations)
-                        currentLengthIterations = 2*currentLengthIterations;
-                    end
-                end
-                if (obj.options.phateEmbedding)
-                    % Plotting samples at original position.
-                    ax1 = subplot('Position', [0.05, 0.125, 0.425, 0.8]);
-                    [~, npca] = size(obj.contractionSequence(:, :, 1));
-                    embedding = phate(obj.contractionSequence(:, :, 1), 'npca', npca, 'mds_method', 'cmds');
-                    scatterX(embedding, 'colorAssignment', obj.clusterAssignments(obj.iteration, :));
-                    colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
-                    % Plotting samples at contracted position.
-                    ax2 = subplot('Position', [0.525, 0.125, 0.425, 0.8]);
-                    scatterX(embedding);
-                    colormap(ax2, 'gray');
-                    hold on;
-                    [centroids, sizes] = stats(embedding, obj.clusterAssignments(obj.iteration, :));
-                    scatter(centroids(:, 1), centroids(:, 2), sizes, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))), 'o', 'filled');
-                    hold off;
-                else
-                    % Plotting samples at original position.
-                    ax1 = subplot('Position', [0.05, 0.125, 0.425, 0.8]);
-                    scatterX(obj.contractionSequence(:, :, 1), 'colorAssignment', obj.clusterAssignments(obj.iteration, :),...
-                                'dimensionalityReductionMethod', 'tsne', ...
-                                'sizeAssignment', obj.options.sizefn(obj.clusterAssignments(obj.iteration, :), obj.channels), ...
-                                'labels', obj.options.labelfn(obj.clusterAssignments(obj.iteration, :), obj.channels));
-                    colormap(ax1, distinguishable_colors(length(unique(obj.clusterAssignments(obj.iteration, :)))));
-                    lims = axis;
-                    % Plotting samples at contracted position.
-                    ax2 = subplot('Position', [0.525, 0.125, 0.425, 0.8]);
-                    sizeAssignment = sqrt(cellfun(@size, obj.sampleIndices, repmat({2}, 1, length(obj.sampleIndices))));
-                    scatterX(obj.dataContracted, ...
-                         'colorAssignment', 1:max(obj.clusterAssignments(obj.iteration, :)), ...
-                         'sizeAssignment', sizeAssignment');
-                    colormap(ax2, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
-                end
-                bar = subplot('Position', [0.05, 0.05, 0.9, 0.05]);
-                data = obj.clusterAssignments(end,:);
-                branches = max(obj.clusterAssignments(end,:));
-                cbranch=[1*ones(length(obj.clusterAssignments(end, obj.clusterAssignments(end,:) == 1)),1)];  
-            
-                for cluster = 2:branches
-                   group = obj.clusterAssignments(end, obj.clusterAssignments(end,:) == cluster);
-                   cbranch=[cbranch; cluster*ones(length(group),1)];
-                end
-                imagesc(bar, cbranch');
-                colormap(bar, distinguishable_colors(max(obj.clusterAssignments(obj.iteration, :))));
-                set(bar,'xtick', []);
-                set(bar,'ytick', []);
-                % Plotting Header Line
-                subplot('Position', [0.05, 0.925, 0.935, 0.125], 'Visible', 'off')
-                toWrite = ['Iteration ' num2str(obj.iteration) ...
-                           ', \sigma = ' num2str(obj.currentSigma) ...
-                           ', #Clusters = ' num2str(length(unique(obj.clusterAssignments(obj.iteration, :)))) ...
-                           ', #Samples = ' num2str(size(obj.dataContracted, 1))];
-                myTextObj = text(0, 0.5, toWrite, 'FontSize', 20);
-                obj.saveFigureAsAnimationFrame();
-                obj.runtimes('vis') = obj.runtimes('vis') + toc;
-            end
         end
         function rsl = checkTerminationCondition(obj)
             tic
@@ -448,26 +371,6 @@ classdef ContractionClustering
                 save([obj.options.prefixFileNames obj.options.asString() '_condensationSequence.mat'], ...
                      'condensationSequence');
             end
-        end
-        function saveFigureAsAnimationFrame(obj)
-            rez=1200; 
-            f=gcf;
-            figpos=getpixelposition(f);
-            resolution=get(0,'ScreenPixelsPerInch'); 
-            set(f,'paperunits','inches','papersize',figpos(3:4)/resolution,...
-                        'paperposition',[0 0 figpos(3:4)/resolution]);
-            im = print('-RGBImage');
-            [imind,cm] = rgb2ind(im,256);
-            snapshot = char(strcat(obj.options.destination, 'step-', string(obj.iteration), '-clusters.png'));
-            saveas(gcf, snapshot);
-            filename = char(strcat(obj.options.destination, 'animated.gif'));
-            
-            if obj.iteration == 1
-                imwrite(imind,cm,filename,'gif','Loopcount',inf,'DelayTime',0);
-            else
-                imwrite(imind,cm,filename,'gif','WriteMode','append','DelayTime',1);
-            end
-            close all;
         end
     end
 end

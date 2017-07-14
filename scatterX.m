@@ -1,4 +1,4 @@
-function scatterX(M, varargin)
+function [X,Y] = scatterX(M, varargin)
 
     dimensionalityReductionMethod = 'mds';
     sizeAssignment = 20*ones(size(M,1), 1);
@@ -58,6 +58,8 @@ function scatterX(M, varargin)
         M_jitter = M_jitter * diag((max(M_toPlot)-min(M_toPlot)));
         M_toPlot = M_toPlot + M_jitter / 70;
     end
+    X = M_toPlot(:,1);
+    Y = M_toPlot(:,2);
     if (size(M_toPlot, 2) == 2)
         if (densityColoring)
             dscatter(M_toPlot(:,1), M_toPlot(:,2));

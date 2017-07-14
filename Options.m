@@ -28,6 +28,7 @@ classdef Options
         phateEmbedding = false;
         labelfn = @(clusters, labels) labels;
         sizefn = @(clusters, labels) ones(length(labels), 1);
+        plotfn = @plotstate;
     end
     methods
         function obj = Options(varargin)
