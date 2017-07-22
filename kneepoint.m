@@ -1,6 +1,6 @@
-function [I, J] = kneepoint(X, Y, varargin)
+function [I, J, D] = kneepoint(X, Y, varargin)
     fn = @mmd_mesh;
-    maxclusters = 1000;
+    maxclusters = 200;
     for i=1:length(varargin)-1
         if (strcmp(varargin{i}, 'distance'))
             if (strcmp(varargin{i+1}, 'mmd'))
@@ -14,13 +14,39 @@ function [I, J] = kneepoint(X, Y, varargin)
         end
     end
     A = area(X, Y, maxclusters);
-    [D] = fn(X,Y, A);
+    D = fn(X,Y, A);
     mesh(D);
     [I, J] = knee(D);
 end
 
+
+function [P, I, J] = path(D)
+    [n, m] = size(D);
+    [i, j] = find(~isnan(D), 1, 'first');
+    I = [];
+    J = [];
+    P = D(i, j);
+    while i < n && j < m
+        % Side, Diag, Down
+        move = [P(end) - D(i, j+1), P(end) - D(i+1, j+1), P(end) - D(i+1, j)];
+        choice = find(move == max(move), 1, 'first');
+        switch choice
+            case 1
+                j = j+1;
+            case 2
+                i = i + 1;
+                j = j + 1;
+            case 3
+                i = i + 1;
+        end
+        P = [P, D(i, j)];
+        I = [I, i];
+        J = [J, j];
+    end
+end
 function [I, J] = knee(D)
-    [I, J] = find(diff(D) > 0, 1, 'first');
+    [P, I, J] = path(D);
+    plot(P);
 end
 
 function [M] = area(X, Y, num)
