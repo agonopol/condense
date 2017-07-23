@@ -1,4 +1,6 @@
 classdef ContractionClustering
+    
+    %% Properties
     properties
         options = [];
         % This holds the data point positions at each point of the sequence.
@@ -23,6 +25,8 @@ classdef ContractionClustering
         channels = []
     end
     methods
+        
+        %% Constructor
         function obj = ContractionClustering(data, channels, options)
             obj.options = options;
             obj.channels = channels;
@@ -48,11 +52,15 @@ classdef ContractionClustering
 
             obj.runtimes = containers.Map({'aff', 'spd', 'clas', 'vis', 'contr', 'rest'}, zeros(1, 6));
         end
+        
+        %% Contract until terminating condition
         function obj = contract(obj)
             obj = obj.steps(obj.options.maxNumContractionSteps);
             obj.emitRuntimeBreakdown();
             obj.emitCondensationSequence();
         end
+        
+        %% Perform one contraction step
         function obj = steps(obj, varargin)
             switch nargin
                 case 1
@@ -81,6 +89,8 @@ classdef ContractionClustering
                 end
             end
         end
+        
+        %% Calculate Affinity Matrix
         function obj = calcAffinities(obj)
             tic;
             obj.weights = cellfun(@length, obj.sampleIndices);
@@ -105,6 +115,8 @@ classdef ContractionClustering
                                                                     'weights', obj.weights);
             obj.runtimes('aff') = obj.runtimes('aff') + toc;
         end
+        
+        %% Spectral Decompose the matrix
         function obj = spectralDecompose(obj)
             if (obj.requireSpectralDecomposition())
                 tic
@@ -118,6 +130,8 @@ classdef ContractionClustering
                 obj.runtimes('spd') = obj.runtimes('spd') + toc;
             end
         end
+        
+        %% Assign clusters
         function obj = assignClusters(obj)
             tic;
             switch (obj.options.clusterAssignmentMethod)
@@ -140,6 +154,8 @@ classdef ContractionClustering
                                                                        obj.sampleIndices);
             obj.runtimes('clas') = obj.runtimes('clas') + toc;
         end
+        
+        %% Check termination
         function rsl = checkTerminationCondition(obj)
             tic
             rsl = false;
@@ -151,6 +167,8 @@ classdef ContractionClustering
             end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
         end
+        
+        %% Contract 
         function obj = performContractionMove(obj)
             tic
             diffusedNormalizedAffinityMatrix = diffuse(obj.normalizedAffinityMatrix, 'numDiffusionSteps', obj.options.numDiffusionSteps, 'weights', obj.weights); 
@@ -158,6 +176,8 @@ classdef ContractionClustering
                                  +  obj.options.inertia    * obj.dataContracted;
             obj.runtimes('contr') = obj.runtimes('contr') + toc;
         end
+        
+        %% Check meta stability
         function stable = isMetastable(obj)
             stable = false;
             if (obj.iteration == 1)
@@ -185,6 +205,8 @@ classdef ContractionClustering
                 end
             end
         end
+        
+        %% Control the Sigma
         function obj = controlSigma(obj)
             tic
             persistent iterationLastIncrease;
@@ -223,6 +245,8 @@ classdef ContractionClustering
             end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
         end
+        
+        %% Merge Epsilon Clusters
         function obj = mergeEpsilonClusters(obj)
             tic
             persistent previousSigma;
@@ -253,10 +277,14 @@ classdef ContractionClustering
             end
             obj.runtimes('rest') = obj.runtimes('rest') + toc;
         end
+        
+        %% Check if spectral decomposition is required
         function rsl = requireSpectralDecomposition(obj)
             rsl = (   strcmp(obj.options.clusterAssignmentMethod, 'spectral') ...
                    || strcmp(obj.options.controlSigmaMethod, 'nuclearNormStabilization'));
         end
+        
+        %% Plot Heatmaps
         function heatmap(obj, fields)
             if (nargin < 2)
                 fields = obj.channels;
@@ -264,6 +292,8 @@ classdef ContractionClustering
             obj.centroidHeatmap(fields);
             obj.clusterHeatmaps(fields);
         end
+        
+        %% Plot Centroid Heatmap
         function centroidHeatmap(obj, fields)
             fields = sort(fields);
             index = find(ismember(sort(obj.channels), fields));
@@ -296,6 +326,8 @@ classdef ContractionClustering
             colorbar(fig);
             saveas(fig, strcat(obj.options.destination, 'centroids.png'));
         end
+        
+        %% Plot Clusters Heatmap
         function clusterHeatmaps(obj, fields)
             fields = sort(fields);
             index = find(ismember(sort(obj.channels), fields));
@@ -339,6 +371,8 @@ classdef ContractionClustering
             frame.InvertHardcopy = 'off';
             saveas(frame, strcat(obj.options.destination, 'heatmap.png'));
         end
+        
+        %% Progress 
         function printProgress(obj, forcePrint)
             persistent timeLastPrint;
             if (obj.iteration==1)
@@ -357,19 +391,14 @@ classdef ContractionClustering
                 end
             end
         end
+        
+        %% Runtime breakdown
         function emitRuntimeBreakdown(obj)
             if (obj.options.emitRuntimeBreakdown)
                 runtimeLabels = obj.runtimes.keys();
                 runtimes = obj.runtimes.values(runtimeLabels);
                 save([obj.options.prefixFileNames obj.options.asString() '_runtimeBreakdown.mat'], ...
                      'runtimes', 'runtimeLabels');
-            end
-        end
-        function emitCondensationSequence(obj)
-            if (obj.options.emitCondensationSequence)
-                condensationSequence = obj.contractionSequence;
-                save([obj.options.prefixFileNames obj.options.asString() '_condensationSequence.mat'], ...
-                     'condensationSequence');
             end
         end
     end
