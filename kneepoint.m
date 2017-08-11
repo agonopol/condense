@@ -46,7 +46,8 @@ function [P, I, J] = path(D)
 end
 function [I, J] = knee(D)
     [P, I, J] = path(D);
-    plot(P);
+    plot(diag(D));
+    
 end
 
 function [M] = area(X, Y, num)

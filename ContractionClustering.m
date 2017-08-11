@@ -57,7 +57,6 @@ classdef ContractionClustering
         function obj = contract(obj)
             obj = obj.steps(obj.options.maxNumContractionSteps);
             obj.emitRuntimeBreakdown();
-            obj.emitCondensationSequence();
         end
         
         %% Perform one contraction step
