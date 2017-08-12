@@ -12,9 +12,13 @@ function plot_quality(data, fn, varargin)
             plot (x, y, 'DisplayName' , label);
         end
    end
-   hold off;
+   xlabel('# of clusters') % x-axis label
+   ylabel(fn) % y-axis label
+   title('Clustering Quality')
+
    legend ( 'show' );
-   
+   hold off;
+
    saveas(gcf, output);
    close all;
 end
