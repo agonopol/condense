@@ -20,5 +20,5 @@ function plot_quality(data, fn, varargin)
    hold off;
 
    saveas(gcf, output);
-   close all;
+%    close all;
 end

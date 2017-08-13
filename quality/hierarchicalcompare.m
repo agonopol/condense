@@ -1,0 +1,6 @@
+function [assigments] = hierarchicalcompare(matrix, partitions)
+    assigments = arrayfun(@(k) clusterdata(matrix, 'maxclust', max(partitions(k, :))), ...
+        1:size(partitions, 1), ...
+        'UniformOutput', false);
+    assigments = cell2mat(assigments)';
+end
