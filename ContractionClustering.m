@@ -56,7 +56,6 @@ classdef ContractionClustering
         %% Contract until terminating condition
         function obj = contract(obj)
             obj = obj.steps(obj.options.maxNumContractionSteps);
-            obj.emitRuntimeBreakdown();
         end
         
         %% Perform one contraction step
