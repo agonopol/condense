@@ -1,9 +1,7 @@
-function q = affmodularity(data, assigment)    
-    % calculate affinity matrix
-%     A = CalculateAffinity(data);
-%     q = modularity(rownorm(data), assigment);
-    A = CalculateAffinity(data);
-    q = modularity(A, assigment);
+function [q, scores] = affmodularity(data, assigment)    
+
+    A = CalculateAffinity(rownorm(data));
+    [q, scores] = modularity(A, assigment);
 end
 
 function [affinity] = CalculateAffinity(data)
