@@ -3,9 +3,15 @@ function qpopulation(X, Y, limit, measure, varargin)
    
    if (strcmp(measure, 'mmd'))
         quality = @mmdscore;
-   else
+   elseif (strcmp(measure, 'emd'))
         quality = @emdscore;
+   elseif (strcmp(measure, 'rindex'))
+        quality = @rindexscore;
    end
+   
+   neurons = intersect(Y.channels, X.channels);
+   iX = getindex(X.channels, neurons);
+   iY = getindex(Y.channels, neurons);
    
    k = intersect(arrayfun(@(x) max(X.clusterAssignments(x, :)), 1:size(X.clusterAssignments, 1)), ...
                 arrayfun(@(y) max(Y.clusterAssignments(y, :)), 1:size(Y.clusterAssignments, 1)));
@@ -22,7 +28,7 @@ function qpopulation(X, Y, limit, measure, varargin)
    hold on;
    ylabel(measure);
 
-   [x, y] = quality(dX, dY, pX, pY);
+   [x, y] = quality(dX, dY, pX, pY, iX, iY);
    plot(x, y, 'DisplayName' , 'condensation');
    
    for i=1:2:length(varargin)-1
@@ -31,7 +37,7 @@ function qpopulation(X, Y, limit, measure, varargin)
         else
             label = varargin{i};
             fn = varargin{i+1};
-            [x, y] = quality(dX, dY, fn(dX, pX), fn(dY, pY));
+            [x, y] = quality(dX, dY, fn(dX, pX), fn(dY, pY), iX, iY);
             plot (x, y, 'DisplayName' , label);
         end
    end
@@ -47,7 +53,7 @@ function qpopulation(X, Y, limit, measure, varargin)
    
 end
 
-function [x, scores] = mmdscore(dX, dY, pX, pY)
+function [x, scores] = mmdscore(dX, dY, pX, pY, iX, iY)
     x = arrayfun(@(x) max(pX(x, :)), 1:size(pX, 1));
     scores = zeros(size(x));
     for i = 1:size(pX, 1)
@@ -67,7 +73,16 @@ function [P] = orderP(P)
     P = P(ii, :);
 end
 
-function [x, scores] = emdscore(dX, dY, pX, pY)
+function [x, scores] = rindexscore(dX, dY, pX, pY, iX, iY)
+    x = arrayfun(@(x) max(pX(x,:)), 1:size(pX, 1));
+    scores = zeros(size(x));
+    for i = 1:size(pX, 1)
+       distance = rindex(pX(i, iX), pY(i, iY));
+       scores(i) = abs(distance);
+    end
+end
+
+function [x, scores] = emdscore(dX, dY, pX, pY, iX, iY)
     x = arrayfun(@(x) max(pX(x,:)), 1:size(pX, 1));
     scores = zeros(size(x));
     for i = 1:size(pX, 1)
@@ -80,4 +95,11 @@ function [x, scores] = emdscore(dX, dY, pX, pY)
             scores(i) = nan;
         end
     end
+end
+
+function index = getindex(intersection, neurons)
+    index = arrayfun(@(y) ...
+        find(arrayfun(@(x) ~isempty(x{:}), strfind(intersection, y))), neurons, 'UniformOutput', false);
+    index = cell2mat(index);
+    index = index';
 end
