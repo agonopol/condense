@@ -309,7 +309,7 @@ classdef ContractionClustering
             rows = data(:,2);
             data = zscore(data);
             frame = gcf;
-            fig = subplot('Position', [0.1 0.1 0.8 0.8]);
+            fig = subplot('Position', [1 1 1500 1000]);
             imagesc(fig, data(:,3:end));
             
             fig.XAxis.TickLabels = fields';
@@ -333,25 +333,25 @@ classdef ContractionClustering
             set(frame, 'Position', [1 1 1500 1000]);
             set(frame,'Color','white');
             samples = obj.contractionSequence(:, index, 1);
-            data = samples(obj.clusterAssignments(end,:) == 1,:);
-            branches = max(obj.clusterAssignments(end,:));
-            bins = zeros(branches,1);
+
+            bins = [];
+            cbranch=[];  
+            data = [];
             
-            bins(1) = length(data);
-            cbranch=[1*ones(length(data),1)];  
-            
-            for cluster = 2:branches
+            for cluster = 1:max(obj.clusterAssignments(end,:))
                 
               group = samples(obj.clusterAssignments(end,:) == cluster,:);
-              bins(cluster) = length(group);
+              bins = [bins; size(group, 1)];
               
               data = [data; group];
-              cbranch=[cbranch; cluster*ones(length(group),1)];
+              cbranch=[cbranch; cluster*ones(size(group, 1),1)];
             end
+            
             
             fig = subplot('Position', [0.1, 0.1, .8, .8]);
             
-            imagesc(fig, zscorep(data, .95)');
+            data = zscorep(data, .95)';
+            imagesc(fig, data);
             colormap(fig, parula);
             fig.YAxis.TickLabels = fields';
             set(fig,'ytick',1:length(fields));
@@ -368,6 +368,7 @@ classdef ContractionClustering
             
             frame.InvertHardcopy = 'off';
             saveas(frame, strcat(obj.options.destination, 'heatmap.png'));
+            
         end
         
         %% Progress 
