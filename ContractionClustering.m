@@ -309,7 +309,10 @@ classdef ContractionClustering
             rows = data(:,2);
             data = zscore(data);
             frame = gcf;
-            fig = subplot('Position', [1 1 1500 1000]);
+            set(frame, 'Position', [1 1 1500 1000]);
+            set(frame,'Color','white');
+            
+            fig = subplot('Position', [0.05, 0.05, .9, .9]);
             imagesc(fig, data(:,3:end));
             
             fig.XAxis.TickLabels = fields';
